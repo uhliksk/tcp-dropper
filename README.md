@@ -8,4 +8,4 @@ gcc -o dropper dropper.c
 
 **Usage:**
 
-./dropper [port_number]
+./dropper [port_number [filename.log]]
