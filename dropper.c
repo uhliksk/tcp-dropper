@@ -14,16 +14,18 @@
 
 int daily = 1;
 FILE *fp = NULL;
+FILE *fpc = NULL;
 
 void destroy(int sig)
 {
-  if (fp != NULL)
+  if (fp != NULL && fpc == NULL)
   {
     if (daily > 1)
       fprintf(fp, "=== TODAY: %d ===\n",daily - 1);
 
     fflush(fp);
   }
+
   printf("\n");
   exit(1);
 }
@@ -33,6 +35,7 @@ int main (int argc, char *argv[])
   signal(SIGINT, destroy);
 
   int port = MYPORT;
+  int mday = 0;
 
   if (argc > 1)
   {
@@ -41,6 +44,29 @@ int main (int argc, char *argv[])
   if (argc > 2)
   {
     fp = fopen(argv[2], "a+");
+  }
+  if (argc > 3)
+  {
+    fpc = fopen(argv[3], "r");
+  }
+
+  if (fpc != NULL)
+  {
+    char buffer[8];
+    if (fgets(buffer, 8, fpc) != NULL)
+    {
+      daily = strtol(buffer, NULL, 10);
+    }
+    if (fgets(buffer, 8, fpc) != NULL)
+    {
+      mday = strtol(buffer, NULL, 10);
+    }
+    fclose(fpc);
+  }
+
+  if (argc > 3)
+  {
+    fpc = fopen(argv[3], "w");
   }
 
   int server_sockfd, client_sockfd, client_len;
@@ -57,7 +83,6 @@ int main (int argc, char *argv[])
 
   printf("dropped connections on port %d:\n", port);
   fflush(stdout);
-  int mday = 0;
   while (daily)
     {
       time_t now;
@@ -105,11 +130,24 @@ int main (int argc, char *argv[])
       fflush(stdout);
 
       daily++;
+
+      if (fpc != NULL)
+      {
+        fprintf(fpc,"%d\n%d\n", daily, mday);
+        fflush(fpc);
+        fseek(fpc, 0, SEEK_SET);
+      }
     }
   close(server_sockfd);
+
   if (fp)
   {
     fclose(fp);
+  }
+
+  if (fpc)
+  {
+    fclose(fpc);
   }
   return 0;
 }
